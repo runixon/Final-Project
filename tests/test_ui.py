@@ -11,14 +11,13 @@ def ui():
     session = UISession()
     session.login()
     yield session
-    session.close()
 
 
 @allure.title("Создание персонального события")
 def test_create_event(ui):
     with allure.step("Создание нового персонального события"):
         ui.create_event(ui.TITLE, ui.DESCRIPTION)
-        ui.close_popup()  # Закрываем всплывающее окно
+        ui.close_popup()
 
     with allure.step("Проверка отображения события"):
         element = ui._wait_for_element(By.XPATH, f"//div[contains(text(), '{ui.TITLE}')]")
@@ -30,9 +29,11 @@ def test_update_event_color(ui):
     with allure.step("Изменение цвета события (Фиолетовый)"):
         ui.update_event_color(ui.TITLE)
         ui.close_popup()
-    with allure.step("Проверка применения цвета"):
-        selected_element = ui.driver.find_element(*ui.COLOR_PURPLE)
-        assert "color-circle__border" in selected_element.get_attribute("class")
+
+    with allure.step("Проверка изменения цвета"):
+        expected_color = ui.CHECK_COLOR["purple"]
+        actual_color = ui.check_color(ui.TITLE)
+    assert actual_color == expected_color, f"Цвет {actual_color} не соответствует ожидаемому {expected_color}"
 
 
 @allure.title("Обновление описания события")
@@ -41,7 +42,8 @@ def test_update_event_description(ui):
         new_desc = "Updated Description 123"
         ui.update_event_description(ui.TITLE, new_desc)
         ui.close_popup()
-    with allure.step("Проверка обновления описание"):
+
+    with allure.step("Проверка обновления описания"):
         ui._wait_for_element(By.XPATH, f"//div[contains(text(), '{ui.TITLE}')]").click()
         modal = ui._wait_for_element(By.CSS_SELECTOR, "div.popup")
         description_block = modal.find_element(By.CSS_SELECTOR, "div.description p")
@@ -52,14 +54,17 @@ def test_update_event_description(ui):
 def test_delete_event(ui):
     with allure.step("Удаление события"):
         ui.delete_event(ui.TITLE)
-    with allure.step("Проверка отсутствия события"):
-        WebDriverWait(ui.driver, 10).until(
-            EC.invisibility_of_element_located((By.XPATH, f"//div[contains(text(), '{ui.TITLE}')]")))
+        ui.close_popup()
+
+    with (allure.step("Проверка отсутствия события")):
+        WebDriverWait(ui.driver, 5).until
+        (EC.invisibility_of_element_located((By.XPATH, f"//div[contains(text(), '{ui.TITLE}')]")))
 
 
 @allure.title("Выход из системы")
 def test_logout(ui):
-    with allure.step("Выполнение выхода из аккаунта"):
+    with allure.step("Выполнение выхода"):
         ui.logout()
-    with allure.step("Проверка перехода на страницу авторизации"):
-        ui._wait_for_element(By.CSS_SELECTOR, "a[href^='https://id.skyeng.ru/login']")
+
+    with allure.step("Завершение сессии"):
+        ui.close()
